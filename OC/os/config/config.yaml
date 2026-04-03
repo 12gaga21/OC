@@ -1,0 +1,27 @@
+# Конфигурационный файл ИИ-агента
+
+# Поддерживаемые архитектуры
+architectures:
+  - x86
+  - x86_64
+  - arm
+  - arm64
+  - riscv32
+  - riscv64
+
+# Пути к каталогам
+paths:
+  source: "src/"
+  tests: "tests/"
+  docs: "docs/"
+  output: "output/"
+
+# Настройки эмулятора
+emulator:
+  qemu_path: "/usr/bin/qemu-system-"
+  timeout: 300
+
+# Параметры Git
+git:
+  default_branch: "main"
+  commit_prefix: "AI-OS: "

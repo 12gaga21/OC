@@ -1,0 +1,203 @@
+# Конфигурация тестового окружения для операционной системы
+# Версия: 1.0
+
+# Настройки QEMU
+qemu:
+  # Команда для запуска QEMU (qemu-system-i386, qemu, или полный путь)
+  command: "qemu-system-i386"
+  
+  # Таймаут по умолчанию для запуска QEMU (в секундах)
+  default_timeout: 30
+  
+  # Объем памяти для эмуляции
+  memory: "128M"
+  
+  # Дополнительные аргументы QEMU
+  extra_args: "-no-reboot -no-shutdown"
+
+# Настройки тестов
+tests:
+  # Включение/отключение типов тестов
+  bootloader: true
+  drivers: true
+  filesystem: true
+  network: true
+  shell: true
+  performance: false
+  
+  # Автоматическая сборка перед тестированием
+  auto_build: true
+  
+  # Остановка при первой ошибке
+  stop_on_failure: false
+
+# Настройки сборки
+build:
+  # Каталог сборки (относительно корня проекта)
+  directory: "os/build"
+  
+  # Скрипт сборки
+  script: "build.sh"
+  
+  # Файлы, которые должны быть созданы после сборки
+  required_files:
+    - "boot.bin"
+    - "kernel.bin"
+    - "os.img"
+
+# Настройки логирования
+logging:
+  # Уровень детализации (debug, info, warning, error)
+  level: "info"
+  
+  # Каталог для сохранения логов
+  directory: "os/tests/results"
+  
+  # Сохранять ли логи после успешных тестов
+  keep_success_logs: false
+  
+  # Максимальное количество сохраняемых логов
+  max_log_files: 10
+
+# Настройки отчетов
+reporting:
+  # Формат отчетов (text, json, html)
+  format: "text"
+  
+  # Генерировать отчет после каждого теста
+  generate_after_test: true
+  
+  # Сохранять сводный отчет
+  save_summary: true
+  
+  # Каталог для отчетов
+  directory: "os/tests/results/reports"
+
+# Настройки тестирования загрузчика
+bootloader_tests:
+  # Ожидаемый размер загрузчика (в байтах)
+  expected_size: 512
+  
+  # Ожидаемая сигнатура (шестнадцатеричная)
+  expected_signature: "55aa"
+  
+  # Дополнительные проверки
+  checks:
+    - "size"
+    - "signature"
+
+# Настройки тестирования драйверов
+driver_tests:
+  # Тестируемые драйверы
+  drivers:
+    - "keyboard"
+    - "timer"
+    - "serial"
+    - "vga"
+  
+  # Таймаут для каждого драйвера (в секундах)
+  driver_timeout: 10
+  
+  # Проверять ли вывод в последовательный порт
+  check_serial_output: true
+
+# Настройки тестирования файловой системы
+filesystem_tests:
+  # Тестовые файлы для создания
+  test_files:
+    - name: "test.txt"
+      content: "Hello, World!"
+    - name: "readme.md"
+      content: "# Test File"
+  
+  # Тестовые команды для выполнения
+  test_commands:
+    - "ls"
+    - "cat test.txt"
+    - "echo test > output.txt"
+
+# Настройки тестирования сети
+network_tests:
+  # Включить эмуляцию сети
+  enabled: true
+  
+  # Модель сетевой карты
+  nic_model: "rtl8139"
+  
+  # Конфигурация сети
+  network_config: "user"
+  
+  # Тестовые сетевые операции
+  test_operations:
+    - "ping_loopback"
+    - "check_network_init"
+
+# Настройки тестирования оболочки
+shell_tests:
+  # Тестовые команды оболочки
+  test_commands:
+    - "help"
+    - "version"
+    - "echo test"
+    - "clear"
+  
+  # Таймаут для выполнения команд (в секундах)
+  command_timeout: 5
+
+# Настройки тестов производительности
+performance_tests:
+  # Включить тесты производительности
+  enabled: false
+  
+  # Тестируемые метрики
+  metrics:
+    - "boot_time"
+    - "memory_allocation"
+    - "file_operations"
+  
+  # Количество повторений для каждого теста
+  iterations: 3
+  
+  # Сохранять детальные результаты
+  save_detailed_results: true
+
+# Системные требования
+requirements:
+  # Минимальная версия NASM
+  nasm_version: "2.14"
+  
+  # Минимальная версия QEMU
+  qemu_version: "4.0"
+  
+  # Требуемые команды системы
+  required_commands:
+    - "nasm"
+    - "qemu-system-i386"
+    - "bash"
+    - "timeout"
+
+# Переменные окружения
+environment:
+  # Путь к каталогу тестов
+  tests_dir: "os/tests"
+  
+  # Путь к каталогу сборки
+  build_dir: "os/build"
+  
+  # Путь к корню проекта
+  project_root: "."
+
+# Пользовательские настройки (можно переопределить в local_config.yaml)
+user:
+  # Имя пользователя для отчетов
+  name: "Developer"
+  
+  # Электронная почта для отчетов
+  email: "developer@example.com"
+  
+  # Дополнительные заметки
+  notes: ""
+
+# Примечание: Для переопределения настроек создайте файл local_config.yaml
+# в том же каталоге. Он будет загружен автоматически и переопределит
+# соответствующие настройки из этого файла.
