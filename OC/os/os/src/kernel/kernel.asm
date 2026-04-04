@@ -16,6 +16,7 @@ section .text
     extern paging_init
     extern paging_enable
     extern keyboard_init
+    extern encoding_init
     extern timer_init
     extern serial_init
     extern fs_init
@@ -76,6 +77,7 @@ kmain:
     
     ; Инициализация драйверов устройств
     call keyboard_init
+    call encoding_init
     call timer_init
     call serial_init
     
