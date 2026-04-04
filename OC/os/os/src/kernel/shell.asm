@@ -1,4 +1,5 @@
-; Простая оболочка (shell) для ОС
+; Простая оболочка (shell) для ОС "UNIVERSAL ASM CORE"
+; Стиль: Индустриальный терминал
 bits 32
 
 section .text
@@ -51,7 +52,7 @@ shell_run:
 shell_print_prompt:
     pusha
     
-    ; Вывод строки приглашения
+    ; Вывод строки приглашения в стиле индустриального терминала
     mov esi, prompt_string
     call vga_put_string
     
@@ -270,7 +271,8 @@ section .data
     shell_initialized dd 0
     current_dir_cluster dd 0
     command_ptr dd command_buffer
-    prompt_string db 'OS> ', 0
+    ; Строка приглашения в стиле индустриального терминала
+    prompt_string db '[ТЕРМИНАЛ]> ', 0
     ls_command db 'ls', 0
     cd_command db 'cd', 0
     cat_command db 'cat', 0
