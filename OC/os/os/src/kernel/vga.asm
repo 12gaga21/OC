@@ -70,16 +70,16 @@ vga_put_char:
     je .carriage_return
     
     ; Обычный символ
-    call .put_char_at_cursor
-    call .move_cursor_right
-    jmp .done
+    call put_char_at_cursor
+    call move_cursor_right
+    jmp vga_put_char_done
     
 .backspace:
-    call .move_cursor_left
+    call move_cursor_left
     mov al, ' '
-    call .put_char_at_cursor
-    call .move_cursor_left
-    jmp .done
+    call put_char_at_cursor
+    call move_cursor_left
+    jmp vga_put_char_done
     
 .tab:
     ; Перемещение курсора к следующей позиции, кратной 8
@@ -87,20 +87,25 @@ vga_put_char:
     add ax, 8
     and ax, 0xFFF8  ; Округление до ближайшего меньшего кратного 8
     mov [cursor_x], ax
-    call .update_cursor
-    jmp .done
+    call update_cursor
+    jmp vga_put_char_done
     
 .newline:
     mov word [cursor_x], 0
-    call .move_cursor_down
-    jmp .done
+    call move_cursor_down
+    jmp vga_put_char_done
     
 .carriage_return:
     mov word [cursor_x], 0
-    call .update_cursor
-    jmp .done
-    
-.put_char_at_cursor:
+    call update_cursor
+    jmp vga_put_char_done
+
+vga_put_char_done:
+    pop es
+    popa
+    ret
+
+put_char_at_cursor:
     ; Вычисление адреса в видеопамяти
     mov eax, [cursor_y]
     mov ebx, 80
@@ -116,19 +121,19 @@ vga_put_char:
     mov [es:edi], ax
     
     ret
-    
-.move_cursor_right:
+
+move_cursor_right:
     inc word [cursor_x]
     mov ax, [cursor_x]
     cmp ax, 80
     jl .no_wrap
     mov word [cursor_x], 0
-    call .move_cursor_down
+    call move_cursor_down
 .no_wrap:
-    call .update_cursor
+    call update_cursor
     ret
     
-.move_cursor_left:
+move_cursor_left:
     cmp word [cursor_x], 0
     jg .not_at_start
     ; Если в начале строки, перемещаемся в конец предыдущей строки
@@ -136,26 +141,26 @@ vga_put_char:
     jle .already_at_start
     mov word [cursor_x], 79
     dec word [cursor_y]
-    jmp .update_cursor
+    jmp update_cursor
 .not_at_start:
     dec word [cursor_x]
 .already_at_start:
-    call .update_cursor
+    call update_cursor
     ret
     
-.move_cursor_down:
+move_cursor_down:
     inc word [cursor_y]
     mov ax, [cursor_y]
     cmp ax, 25
     jl .no_scroll
     ; Прокрутка экрана
-    call .scroll_screen
+    call scroll_screen
     dec word [cursor_y]
 .no_scroll:
-    call .update_cursor
+    call update_cursor
     ret
     
-.update_cursor:
+update_cursor:
     ; Обновление позиции курсора на экране
     mov ax, [cursor_y]
     mov bx, 80
@@ -177,7 +182,7 @@ vga_put_char:
     
     ret
     
-.scroll_screen:
+scroll_screen:
     pusha
     
     ; Копирование строк с 1 по 24 в строки с 0 по 23
@@ -239,7 +244,7 @@ vga_clear_screen:
     ; Установка курсора в начало
     mov word [cursor_x], 0
     mov word [cursor_y], 0
-    call .update_cursor
+    call vga_set_cursor
     
     pop es
     popa
@@ -254,9 +259,35 @@ vga_set_color:
 ; Установка позиции курсора
 ; Вход: ah - строка (0-24), al - столбец (0-79)
 vga_set_cursor:
+    pusha
     mov [cursor_y], ah
     mov [cursor_x], al
     call .update_cursor
+    popa
+    ret
+
+; Внутренняя функция обновления курсора
+.update_cursor:
+    pusha
+    ; Вычисление позиции курсора
+    mov ax, [cursor_y]
+    mov bl, 80
+    mul bl
+    add ax, [cursor_x]
+    
+    ; Отправка команды контроллеру VGA
+    mov dx, 0x3D4
+    mov al, 0x0F
+    out dx, al
+    mov dx, 0x3D5
+    out dx, al
+    mov dx, 0x3D4
+    mov al, 0x0E
+    out dx, al
+    mov dx, 0x3D5
+    shr ax, 8
+    out dx, al
+    popa
     ret
 
 section .data

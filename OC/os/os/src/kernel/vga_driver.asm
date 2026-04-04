@@ -39,13 +39,12 @@ terminal_setcolor:
 terminal_putentryat:
     pusha
     
-    ; Вычисление индекса в буфере терминала
-    ; index = y * VGA_WIDTH + x
-    movzx edx, cl        ; y
-    mov ebx, 80          ; VGA_WIDTH
-    mul ebx, edx
-    movzx edx, bl        ; x
-    add eax, edx
+    ; Сохраняем входные параметры
+    movzx eax, cl        ; eax = y
+    mov ecx, 80          ; VGA_WIDTH
+    mul ecx              ; eax = y * 80
+    movzx ecx, bl        ; ecx = x
+    add eax, ecx         ; eax = y * 80 + x
     
     ; index *= 2 (каждый символ занимает 2 байта)
     shl eax, 1

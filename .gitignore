@@ -1,8 +1,11 @@
 ```
-# Compiled and build artifacts
+# Build artifacts
+*.bin
+build/
+
+# Assembly/object files
 *.o
 *.obj
-*.asm
 
 # Logs and temp files
 *.log

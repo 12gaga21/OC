@@ -12,8 +12,19 @@ section .text
     global shell_cmd_meminfo
     global shell_cmd_tasks
     global shell_cmd_ping
+    global shell_cmd_run
+    global shell_cmd_ls
+    global shell_cmd_cd
+    global shell_cmd_cat
+    global shell_cmd_sysinfo
     
     extern vga_put_string
+    extern loader_run
+    extern loader_load_program
+    extern loader_execute
+    extern fs_list_dir
+    extern dir_change
+    extern fs_read_file
     extern vga_put_char
     extern vga_clear_screen
     extern keyboard_read_char
@@ -583,3 +594,227 @@ section .rodata
 ; ============================================================================
 section .data
     command_buffer times 256 db 0
+
+; ============================================================================
+; КОМАНДА: run - запуск программы .BIN
+; ============================================================================
+shell_cmd_run:
+    pusha
+    
+    ; Вывод сообщения о запуске
+    mov esi, run_message
+    call vga_put_string
+    
+    ; Получение имени файла после "run "
+    mov esi, command_buffer
+    add esi, 4  ; Пропускаем "run "
+    
+    ; Проверка что имя не пустое
+    mov al, [esi]
+    test al, al
+    jz .no_argument
+    
+    ; Вызов загрузчика программ
+    push esi
+    call loader_run
+    add esp, 4
+    test eax, eax
+    js .load_error
+    
+    popa
+    ret
+    
+.no_argument:
+    mov esi, run_no_arg_msg
+    call vga_put_string
+    popa
+    ret
+    
+.load_error:
+    mov esi, run_error_msg
+    call vga_put_string
+    popa
+    ret
+
+; ============================================================================
+; КОМАНДА: ls - вывод содержимого директории
+; ============================================================================
+shell_cmd_ls:
+    pusha
+    
+    ; Вывод заголовка
+    mov esi, ls_header_style
+    call vga_put_string
+    
+    ; Получение текущей директории (по умолчанию корень)
+    xor eax, eax
+    push eax          ; Флаги
+    push current_dir  ; Буфер для результатов
+    push 2048         ; Максимальный размер
+    call fs_list_dir
+    add esp, 12
+    test eax, eax
+    js .ls_error
+    
+    ; Вывод результатов
+    mov esi, current_dir
+    call vga_put_string
+    
+    popa
+    ret
+    
+.ls_error:
+    mov esi, ls_error_msg
+    call vga_put_string
+    popa
+    ret
+
+; ============================================================================
+; КОМАНДА: cd - смена директории
+; ============================================================================
+shell_cmd_cd:
+    pusha
+    
+    ; Получение аргумента после "cd "
+    mov esi, command_buffer
+    add esi, 3  ; Пропускаем "cd "
+    
+    ; Проверка что имя не пустое
+    mov al, [esi]
+    test al, al
+    jz .cd_no_arg
+    
+    ; Вызов функции смены директории
+    push esi
+    call dir_change
+    add esp, 4
+    test eax, eax
+    js .cd_error
+    
+    ; Сообщение об успехе
+    mov esi, cd_success_msg
+    call vga_put_string
+    
+    popa
+    ret
+    
+.cd_no_arg:
+    mov esi, cd_no_arg_msg
+    call vga_put_string
+    popa
+    ret
+    
+.cd_error:
+    mov esi, cd_error_msg
+    call vga_put_string
+    popa
+    ret
+
+; ============================================================================
+; КОМАНДА: cat - вывод содержимого файла
+; ============================================================================
+shell_cmd_cat:
+    pusha
+    
+    ; Получение имени файла после "cat "
+    mov esi, command_buffer
+    add esi, 4  ; Пропускаем "cat "
+    
+    ; Проверка что имя не пустое
+    mov al, [esi]
+    test al, al
+    jz .cat_no_arg
+    
+    ; Открытие и чтение файла
+    push esi
+    call fs_open_file
+    add esp, 4
+    test eax, eax
+    js .cat_open_error
+    
+    mov [cat_file_handle], eax
+    
+    ; Чтение файла в буфер
+    push dword [cat_file_handle]
+    push cat_buffer
+    push 4096
+    call fs_read_file
+    add esp, 12
+    test eax, eax
+    js .cat_read_error
+    
+    ; Вывод содержимого
+    mov esi, cat_buffer
+    call vga_put_string
+    
+    ; Закрытие файла
+    push dword [cat_file_handle]
+    call fs_close_file
+    add esp, 4
+    
+    popa
+    ret
+    
+.cat_no_arg:
+    mov esi, cat_no_arg_msg
+    call vga_put_string
+    popa
+    ret
+    
+.cat_open_error:
+    mov esi, cat_open_error_msg
+    call vga_put_string
+    popa
+    ret
+    
+.cat_read_error:
+    mov esi, cat_read_error_msg
+    call vga_put_string
+    popa
+    ret
+
+; ============================================================================
+; КОМАНДА: sysinfo - информация о системе
+; ============================================================================
+shell_cmd_sysinfo:
+    pusha
+    
+    mov esi, sysinfo_header
+    call vga_put_string
+    
+    ; Вызов функции вывода информации о системе
+    call print_system_info
+    
+    popa
+    ret
+
+; ============================================================================
+; НОВЫЕ СТРОКОВЫЕ КОНСТАНТЫ
+; ============================================================================
+section .rodata
+    run_message db '† Запускъ программы...', 0x0D, 0x0A, 0
+    run_no_arg_msg db '✗ Ошибка: не указано имя файла', 0x0D, 0x0A, 'Использованіе: run <файл.bin>', 0x0D, 0x0A, 0
+    run_error_msg db '✗ Ошибка загрузки программы', 0x0D, 0x0A, 0
+    
+    ls_header_style db 0x0D, 0x0A, '╔════════════════════════════════════════╗', 0x0D, 0x0A
+                    db '║       Содержимое каталога            ║', 0x0D, 0x0A
+                    db '╠════════════════════════════════════════╣', 0x0D, 0x0A, 0
+    ls_error_msg db '✗ Ошибка чтенія директоріи', 0x0D, 0x0A, 0
+    
+    cd_success_msg db '✓ Директорія смѣнена', 0x0D, 0x0A, 0
+    cd_no_arg_msg db '✗ Ошибка: не указана директорія', 0x0D, 0x0A, 'Использованіе: cd <путь>', 0x0D, 0x0A, 0
+    cd_error_msg db '✗ Ошибка смѣны директоріи', 0x0D, 0x0A, 0
+    
+    cat_no_arg_msg db '✗ Ошибка: не указанъ файлъ', 0x0D, 0x0A, 'Использованіе: cat <файл>', 0x0D, 0x0A, 0
+    cat_open_error_msg db '✗ Ошибка открытія файла', 0x0D, 0x0A, 0
+    cat_read_error_msg db '✗ Ошибка чтенія файла', 0x0D, 0x0A, 0
+    
+    sysinfo_header db 0x0D, 0x0A, '† † † ИНФОРМАЦІЯ О СИСТЕМѢ † † †', 0x0D, 0x0A, 0
+
+; ============================================================================
+; ПЕРЕМЕННЫЕ
+; ============================================================================
+section .bss
+    cat_file_handle resd 1
+    cat_buffer resb 4096
+    current_dir resb 2048
