@@ -1,5 +1,5 @@
 ; Простая оболочка (shell) для ОС "UNIVERSAL ASM CORE"
-; Стиль: Индустриальный терминал
+; Стиль: "Славянский Терминал" - Вдохновлен эстетикой Российской Империи
 bits 32
 
 section .text
@@ -52,7 +52,7 @@ shell_run:
 shell_print_prompt:
     pusha
     
-    ; Вывод строки приглашения в стиле индустриального терминала
+    ; Вывод строки приглашения в стиле славянского терминала
     mov esi, prompt_string
     call vga_put_string
     
@@ -271,16 +271,16 @@ section .data
     shell_initialized dd 0
     current_dir_cluster dd 0
     command_ptr dd command_buffer
-    ; Строка приглашения в стиле индустриального терминала
-    prompt_string db '[ТЕРМИНАЛ]> ', 0
+    ; Строка приглашения в стиле славянского терминала
+    prompt_string db '[СЛАВЯНСКІЙ ТЕРМИНАЛЪ]> ', 0
     ls_command db 'ls', 0
     cd_command db 'cd', 0
     cat_command db 'cat', 0
     sysinfo_command db 'sysinfo', 0
-    unknown_command_msg db 'Unknown command', 0x0A, 0
-    ls_header db 'Contents of directory:', 0x0A, 0
-    cd_message db 'Changing directory...', 0x0A, 0
-    cat_message db 'Displaying file contents...', 0x0A, 0
+    unknown_command_msg db 'Невѣдомая команда', 0x0A, 0
+    ls_header db 'Содержимое каталога:', 0x0A, 0
+    cd_message db 'Перемѣщеніе каталога...', 0x0A, 0
+    cat_message db 'Отображеніе содержимого файла...', 0x0A, 0
 
 section .bss
     command_buffer resb 256
