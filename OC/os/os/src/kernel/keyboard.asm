@@ -1,7 +1,13 @@
-; Драйвер клавиатуры для ОС
+; Драйвер клавиатуры для ОС с поддержкой русской раскладки
 bits 32
 
 section .text
+    global keyboard_get_layout
+    global keyboard_set_layout
+    extern encoding_init
+    extern encoding_translate_char
+    extern encoding_handle_layout_toggle
+    extern encoding_get_active_layout
     global keyboard_init
     global keyboard_handler
     global read_scan_code
@@ -169,3 +175,73 @@ section .bss
     key_buffer_head: resd 1
     key_buffer_tail: resd 1
     key_buffer_count: resd 1
+; Получить текущую раскладку
+; Выход: EAX = 0 (English) или 1 (Russian)
+keyboard_get_layout:
+    push ebx
+    call encoding_get_active_layout
+    pop ebx
+    ret
+
+; Установить раскладку
+; Вход: EAX = 0 (English) или 1 (Russian)
+keyboard_set_layout:
+    push ebx
+    call encoding_set_active_layout
+    pop ebx
+    ret
+
+; Переопределение scancode_to_ascii для поддержки русской раскладки
+; Теперь использует модуль encoding
+scancode_to_ascii_new:
+    push ebx
+    push ecx
+    push edx
+    
+    ; Получаем состояние модификаторов
+    movzx ecx, bl          ; ECX = сканкод
+    xor ebx, ebx
+    
+    ; Проверяем Shift
+    cmp byte [shift_pressed], 0
+    je .no_shift
+    or ebx, 0x01           ; Бит 0 = Shift
+.no_shift:
+    
+    ; Проверяем Ctrl
+    cmp byte [ctrl_pressed], 0
+    je .no_ctrl
+    or ebx, 0x02           ; Бит 1 = Ctrl
+.no_ctrl:
+    
+    ; Проверяем Alt
+    cmp byte [alt_pressed], 0
+    je .no_alt
+    or ebx, 0x04           ; Бит 2 = Alt
+.no_alt:
+    
+    ; Вызываем функцию перевода с учётом раскладки
+    ; BL = сканкод, BH = модификаторы
+    mov bl, cl
+    call encoding_translate_char
+    
+    ; Если CF=1 (нет символа), возвращаем 0
+    jc .no_char
+    
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+    
+.no_char:
+    xor al, al
+    pop edx
+    pop ecx
+    pop ebx
+    ret
+
+section .bss
+    shift_pressed: resb 1
+    ctrl_pressed: resb 1
+    alt_pressed: resb 1
+    caps_lock: resb 1
