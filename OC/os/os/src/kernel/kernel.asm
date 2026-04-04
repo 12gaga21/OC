@@ -26,6 +26,9 @@ section .text
     extern task_switch
     extern scheduler_yield
     extern print_system_info
+    ; HAL и оптимизации
+    extern hal_init
+    extern simd_init
 
 ; Точка входа в ядро
 _start:
@@ -74,6 +77,12 @@ kmain:
     ; Инициализация страничной памяти
     call paging_init
     call paging_enable
+    
+    ; Инициализация HAL (Hardware Abstraction Layer)
+    call hal_init
+    
+    ; Инициализация SIMD оптимизаций
+    call simd_init
     
     ; Инициализация драйверов устройств
     call keyboard_init
